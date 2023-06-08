@@ -12,7 +12,7 @@ csv_files.sort(key=lambda x: os.path.getmtime(os.path.join(folder_path, x)), rev
 if len(csv_files) < 2:
     print("There are not enough files in the directory.")
 else:
-    csv_file = csv_files[-1]
+    csv_file = csv_files[1]
     
     file_path = os.path.join(folder_path, csv_file)
     df = pd.read_csv(file_path, delimiter=',')
