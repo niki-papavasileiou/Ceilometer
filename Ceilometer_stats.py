@@ -1,7 +1,7 @@
 import pandas as pd
 import os 
 
-folder_path = r"C:\Users\nikip\Desktop\testceilo"  
+folder_path = r"to path telospanton tu folder me ta data"  
 
 # Get a list of all csv files in the folder
 csv_files = [f for f in os.listdir(folder_path) if f.endswith('.csv')]
