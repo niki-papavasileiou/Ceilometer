@@ -1,0 +1,63 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+Data=[]
+
+
+
+df_f = pd.read_csv(filename)
+Back_sc = df_f['Backscatter Profile( (100000*srad*km)^-1 )']
+
+for B in Back_sc:
+      floats = [float(x) if x else 0 for x in B.split(',')]
+      Data.append(floats)
+
+
+
+def Plot_hist(MAX_IN,MIN_IN):
+
+    fig, ax = plt.subplots()
+    data = np.array(Data).T
+
+    x = np.linspace(0, 1, data.shape[1])
+    y = np.linspace(0, 1, data.shape[0])
+
+    X, Y = np.meshgrid(x, y)
+  
+
+
+
+    plt.hist(data.flatten(), bins=200,align='mid')  
+    plt.xlabel('Values')
+    plt.ylabel('Frequency')
+    print(file)
+    plt.title('Histogram file ')
+
+    plt.xlim(np.min(data),np.max(data))
+    plt.show()
+
+
+
+def Plot(MAX_IN,MIN_IN):
+    data = np.array(Data).T
+    fig, ax = plt.subplots()
+    x = np.linspace(0, 1, data.shape[1])
+    y = np.linspace(0, 1, data.shape[0])
+
+    X, Y = np.meshgrid(x, y)
+
+
+    pcm = plt.pcolormesh(X, Y,  data, cmap='jet')
+
+
+    cbar = plt.colorbar(pcm)
+    plt.xlabel('Backscatter Profile( (100000*srad*km)^-1)')
+    plt.ylabel('Height')
+    cbar.set_label('Value')
+    pcm.set_clim(MIN_IN,MAX_IN)
+    plt.title([MAX_IN,MIN_IN])
+
+
+    plt.show()
+
