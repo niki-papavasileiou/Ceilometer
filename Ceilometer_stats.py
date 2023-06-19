@@ -16,7 +16,6 @@ def stats():
             
             file_path = os.path.join(folder_path, csv_file)
             df = pd.read_csv(file_path, delimiter=',')
-            print(csv_file)
 
             df['UTC Timestamp'] = pd.to_datetime(df['UTC Timestamp'])
             df['Hour'] = df['UTC Timestamp'].dt.hour
@@ -204,4 +203,5 @@ while True:
 
       if new_file_count > file_count:
             file_count = new_file_count
+            csv_files = new_csv_files
             stats()
