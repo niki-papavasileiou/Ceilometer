@@ -1,6 +1,9 @@
 import pandas as pd
 import os
 import ast
+import re 
+
+folder_path = r"C:\Users\nikip\Desktop\testceilo"
 
 def calculate_weighted_avg(df):
     weights = [1, 2, 3]
@@ -11,7 +14,6 @@ def calculate_weighted_avg(df):
     return avg / sum(weights)
 
 def stats():
-    folder_path = r"C:\Users\nikip\Desktop\testceilo"
     csv_files = [f for f in os.listdir(folder_path) if f.endswith('.csv')]
 
     if len(csv_files) == 0:
@@ -78,7 +80,7 @@ df_s = pd.read_csv('statistics.csv', delimiter=',', dtype={'date': str})
 indices_value_over_90 = []
 
 # Iterate over the rows of the 'Sky Condition 2( Oktas ) Distribution' column
-for index, row in enumerate(df_s['Sky Condition 2( Oktas ) Distribution']):
+for index, row in enumerate(df_s['Sky Condition 1( Oktas ) Distribution']):
     # Convert the string representation of the dictionary to an actual dictionary
     dictionary_data = ast.literal_eval(row)
     
@@ -87,10 +89,23 @@ for index, row in enumerate(df_s['Sky Condition 2( Oktas ) Distribution']):
     
     if value_at_0 > 90:
         indices_value_over_90.append(index)
+        # Get the values in the 'date' column for the indices
+        mask = df_s.index.isin(indices_value_over_90)
 
-    # Get the values in the 'date' column for the indices
-mask = df_s.index.isin(indices_value_over_90)
+        # Filter the 'date' column based on the mask and print the values
+        dates_value_over_90 = df_s.loc[mask, 'date']
 
-# Filter the 'date' column based on the mask and print the values
-dates_value_over_90 = df_s.loc[mask, 'date']
-print(dates_value_over_90)
+date_pattern = re.compile(r"\d{2}\d{2}\d{2}")
+
+def check_date_in_filenames(folder_path, date):
+    for filename in os.listdir(folder_path):
+        if date_pattern.search(filename):
+            if date in date_pattern.search(filename).group():
+                return True
+    return False
+
+for date in dates_value_over_90:
+    if check_date_in_filenames(folder_path, date):
+        print(f"Date {date} exists in filenames.")
+    else:
+        print(f"Date {date} does not exist in filenames.")
