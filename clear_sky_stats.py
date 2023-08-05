@@ -1,9 +1,11 @@
+import matplotlib.pyplot as plt
 import pandas as pd
 import os
 import ast
 import re 
 
 folder_path = r"C:\Users\nikip\Desktop\testceilo"
+folder_path_out = r"C:\Users\nikip\Desktop\results"
 
 def calculate_weighted_avg(df):
     weights = [1, 2, 3]
@@ -140,7 +142,33 @@ for date in dates_value_over_90:
         print(f"Date {date} does not exist in filenames.")
 
 output_filename = 'all_hourly_averages.csv'
-output_file_path = os.path.join(folder_path, output_filename)
+output_file_path = os.path.join(folder_path_out, output_filename)
 all_hourly_avg_df.to_csv(output_file_path)
 
 print(f"All hourly average data saved to: {output_file_path}")
+
+data = pd.read_csv(output_file_path, delimiter=',')
+data['UTC Timestamp'] = pd.to_datetime(data['UTC Timestamp'])
+
+# Extract the hour from the 'UTC Timestamp' column
+data['Hour'] = data['UTC Timestamp'].dt.hour
+
+# Group by hour, and calculate the average of the 'Weighted Avg' column
+grouped_data_avg = data.groupby('Hour')['Weighted Avg'].mean().reset_index()
+grouped_data_max = data.groupby('Hour')['Weighted Avg'].max().reset_index()
+grouped_data_min = data.groupby('Hour')['Weighted Avg'].min().reset_index()
+grouped_data_std = data.groupby('Hour')['Weighted Avg'].std().reset_index()
+
+plt.plot(grouped_data_avg['Hour'], grouped_data_avg['Weighted Avg'], label='Average')
+
+plt.plot(grouped_data_max['Hour'], grouped_data_max['Weighted Avg'], label='Maximum')
+
+plt.plot(grouped_data_min['Hour'], grouped_data_min['Weighted Avg'], label='Minimum')
+
+plt.plot(grouped_data_std['Hour'], grouped_data_std['Weighted Avg'], label='Standard Deviation')
+
+plt.xlabel('Hour')
+plt.ylabel('Weighted Avg')
+plt.legend()
+
+plt.show()
