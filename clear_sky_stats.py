@@ -107,6 +107,9 @@ def check_date_in_filenames(folder_path, date):
 
 dates_value_over_90 = list(map(str, dates_value_over_90))
 
+# Initialize an empty DataFrame to hold all hourly averages
+all_hourly_avg_df = pd.DataFrame()
+
 for date in dates_value_over_90:
     matching_filenames = check_date_in_filenames(folder_path, date)
     if matching_filenames:
@@ -120,5 +123,24 @@ for date in dates_value_over_90:
             file_path = os.path.join(folder_path, filename)
             df = pd.read_csv(file_path, delimiter=',')
             
+            # Extract 'UTC Timestamp' and 'Weighted Avg' columns
+            df['UTC Timestamp'] = pd.to_datetime(df['UTC Timestamp'])
+            df['Weighted Avg'] = pd.to_numeric(df['Weighted Avg'], errors='coerce')
+            df = df[['UTC Timestamp', 'Weighted Avg']]
+            
+            # Set 'UTC Timestamp' as the DataFrame index
+            df.set_index('UTC Timestamp', inplace=True)
+            
+            # Resample the data with 1-hour frequency and calculate the hourly average
+            hourly_avg_df = df.resample('1H').mean()
+            
+            # Append the hourly_avg_df DataFrame to the all_hourly_avg_df DataFrame
+            all_hourly_avg_df = pd.concat([all_hourly_avg_df, hourly_avg_df])
     else:
         print(f"Date {date} does not exist in filenames.")
+
+output_filename = 'all_hourly_averages.csv'
+output_file_path = os.path.join(folder_path, output_filename)
+all_hourly_avg_df.to_csv(output_file_path)
+
+print(f"All hourly average data saved to: {output_file_path}")
