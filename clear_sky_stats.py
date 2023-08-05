@@ -98,14 +98,27 @@ for index, row in enumerate(df_s['Sky Condition 1( Oktas ) Distribution']):
 date_pattern = re.compile(r"\d{2}\d{2}\d{2}")
 
 def check_date_in_filenames(folder_path, date):
+    matching_filenames = []
     for filename in os.listdir(folder_path):
         if date_pattern.search(filename):
             if date in date_pattern.search(filename).group():
-                return True
-    return False
+                matching_filenames.append(filename)
+    return matching_filenames
+
+dates_value_over_90 = list(map(str, dates_value_over_90))
 
 for date in dates_value_over_90:
-    if check_date_in_filenames(folder_path, date):
-        print(f"Date {date} exists in filenames.")
+    matching_filenames = check_date_in_filenames(folder_path, date)
+    if matching_filenames:
+        print(f"Date {date} exists in filenames in the following files:")
+        for filename in matching_filenames:
+            print(filename)
+        
+        # Perform further analysis for files with this date
+        # Loop over the matching_filenames list and read each file into a DataFrame
+        for filename in matching_filenames:
+            file_path = os.path.join(folder_path, filename)
+            df = pd.read_csv(file_path, delimiter=',')
+            
     else:
         print(f"Date {date} does not exist in filenames.")
