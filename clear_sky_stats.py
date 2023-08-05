@@ -152,6 +152,7 @@ data['UTC Timestamp'] = pd.to_datetime(data['UTC Timestamp'])
 
 # Extract the hour from the 'UTC Timestamp' column
 data['Hour'] = data['UTC Timestamp'].dt.hour
+data['Hour'] = data['Hour'].apply(lambda x: f'{x:02d}:00')
 
 # Group by hour, and calculate the average of the 'Weighted Avg' column
 grouped_data_avg = data.groupby('Hour')['Weighted Avg'].mean().reset_index()
