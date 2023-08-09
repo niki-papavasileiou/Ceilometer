@@ -1,3 +1,5 @@
+#threshold 95%, classic mean, mixing layer 1-2-3, filter dif 800m
+
 import matplotlib.pyplot as plt
 import pandas as pd
 import os
@@ -7,13 +9,38 @@ import re
 folder_path = r"C:\Users\nikip\Desktop\testceilo"
 folder_path_out = r"C:\Users\nikip\Desktop\results"
 
-def calculate_weighted_avg(df):
-    weights = [1, 2, 3]
-    numeric_cols = ['Mixing Layer 1( Meters )', 'Mixing Layer 2( Meters )', 'Mixing Layer 3( Meters )']
+def calculate_classical_avg(df):
+    numeric_cols = ['Mixing Layer 1( Meters )','Mixing Layer 2( Meters )', 'Mixing Layer 3( Meters )']
+    
+    initial_rows = len(df)  # Number of initial rows
+    
     for col in numeric_cols:
         df[col] = pd.to_numeric(df[col], errors='coerce')
-    avg = sum(df[col] * weight for col, weight in zip(numeric_cols, weights))
-    return avg / sum(weights)
+    
+    # col_diff = df[numeric_cols[1]] - df[numeric_cols[0]]
+    # filtered_df = df[abs(col_diff) <= 800]
+
+    # Calculate the absolute differences between the three columns
+    col_diff_1_2 = df[numeric_cols[1]] - df[numeric_cols[0]]
+    col_diff_2_3 = df[numeric_cols[2]] - df[numeric_cols[1]]
+    col_diff_1_3 = df[numeric_cols[2]] - df[numeric_cols[0]]
+    
+    # Filter out rows where any of the absolute differences is greater than 800
+    filtered_df = df[
+        (abs(col_diff_1_2) <= 800) &
+        (abs(col_diff_2_3) <= 800) &
+        (abs(col_diff_1_3) <= 800)
+    ]
+    
+    final_rows = len(filtered_df)  # Number of terminal rows
+    
+    # Calculate the classical average for the filtered data
+    avg = filtered_df[numeric_cols].mean(axis=1)
+    
+    print(f"Initial rows: {initial_rows}")
+    print(f"final rows: {final_rows}")
+    
+    return avg
 
 def stats():
     csv_files = [f for f in os.listdir(folder_path) if f.endswith('.csv')]
@@ -36,7 +63,7 @@ def stats():
         df.loc[:, 'Thickness'] = df['Mixing Layer 3( Meters )'] - df['Mixing Layer 1( Meters )']
 
         df['date'] = pd.to_datetime(df['UTC Timestamp']).dt.strftime('%d%m%y')
-        df['Weighted Avg'] = calculate_weighted_avg(df)
+        df['Weighted Avg'] = calculate_classical_avg(df)
 
         percentage1 = df['Sky Condition 1( Oktas )'].value_counts(normalize=True) * 100
         percentage2 = df['Sky Condition 2( Oktas )'].value_counts(normalize=True) * 100
@@ -89,7 +116,7 @@ for index, row in enumerate(df_s['Sky Condition 1( Oktas ) Distribution']):
     # Extract the value corresponding to key 0 from the dictionary in each row
     value_at_0 = dictionary_data.get(0, 0)  # If key 0 doesn't exist, return 0 as default value
     
-    if value_at_0 > 90:
+    if value_at_0 > 95:
         indices_value_over_90.append(index)
         # Get the values in the 'date' column for the indices
         mask = df_s.index.isin(indices_value_over_90)
@@ -147,29 +174,64 @@ all_hourly_avg_df.to_csv(output_file_path)
 
 print(f"All hourly average data saved to: {output_file_path}")
 
+
+########################################################################################
+
+
+# data = pd.read_csv(output_file_path, delimiter=',')
+# data['UTC Timestamp'] = pd.to_datetime(data['UTC Timestamp'])
+
+# # Extract the hour from the 'UTC Timestamp' column
+# data['Hour'] = data['UTC Timestamp'].dt.hour
+# data['Hour'] = data['Hour'].apply(lambda x: f'{x:02d}:00')
+
+# # Group by hour, and calculate the average of the 'Weighted Avg' column
+# grouped_data_avg = data.groupby('Hour')['Weighted Avg'].mean().reset_index()
+# grouped_data_max = data.groupby('Hour')['Weighted Avg'].max().reset_index()
+# grouped_data_min = data.groupby('Hour')['Weighted Avg'].min().reset_index()
+# grouped_data_std = data.groupby('Hour')['Weighted Avg'].std().reset_index()
+
+# plt.plot(grouped_data_avg['Hour'], grouped_data_avg['Weighted Avg'], label='Average')
+# plt.plot(grouped_data_max['Hour'], grouped_data_max['Weighted Avg'], label='Maximum')
+# plt.plot(grouped_data_min['Hour'], grouped_data_min['Weighted Avg'], label='Minimum')
+# plt.plot(grouped_data_std['Hour'], grouped_data_std['Weighted Avg'], label='Standard Deviation')
+
+# plt.xlabel('Hour')
+# plt.ylabel('Height')
+# plt.legend()
+
+# plt.show()
+
+import pandas as pd
+import matplotlib.pyplot as plt
+
 data = pd.read_csv(output_file_path, delimiter=',')
 data['UTC Timestamp'] = pd.to_datetime(data['UTC Timestamp'])
 
-# Extract the hour from the 'UTC Timestamp' column
+# Extract month and hour from the 'UTC Timestamp' column
+data['Month'] = data['UTC Timestamp'].dt.month
 data['Hour'] = data['UTC Timestamp'].dt.hour
 data['Hour'] = data['Hour'].apply(lambda x: f'{x:02d}:00')
 
-# Group by hour, and calculate the average of the 'Weighted Avg' column
-grouped_data_avg = data.groupby('Hour')['Weighted Avg'].mean().reset_index()
-grouped_data_max = data.groupby('Hour')['Weighted Avg'].max().reset_index()
-grouped_data_min = data.groupby('Hour')['Weighted Avg'].min().reset_index()
-grouped_data_std = data.groupby('Hour')['Weighted Avg'].std().reset_index()
+# Group by month and hour, and calculate the required statistics
+grouped_data = data.groupby(['Month', 'Hour'])['Weighted Avg'].agg(['mean', 'max', 'min', 'std']).reset_index()
 
-plt.plot(grouped_data_avg['Hour'], grouped_data_avg['Weighted Avg'], label='Average')
+# Create subplots for each month
+unique_months = grouped_data['Month'].unique()
 
-plt.plot(grouped_data_max['Hour'], grouped_data_max['Weighted Avg'], label='Maximum')
+for month in unique_months:
+    month_data = grouped_data[grouped_data['Month'] == month]
 
-plt.plot(grouped_data_min['Hour'], grouped_data_min['Weighted Avg'], label='Minimum')
+    plt.figure(figsize=(10, 6))
+    plt.plot(month_data['Hour'], month_data['mean'], label='Average')
+    plt.plot(month_data['Hour'], month_data['max'], label='Maximum')
+    plt.plot(month_data['Hour'], month_data['min'], label='Minimum')
+    plt.plot(month_data['Hour'], month_data['std'], label='Standard Deviation')
 
-plt.plot(grouped_data_std['Hour'], grouped_data_std['Weighted Avg'], label='Standard Deviation')
+    plt.xlabel('Hour')
+    plt.ylabel('Height')
+    plt.title(f'Statistics for Month {month}')
+    plt.legend()
+    plt.grid()
 
-plt.xlabel('Hour')
-plt.ylabel('Weighted Avg')
-plt.legend()
-
-plt.show()
+    plt.show()
