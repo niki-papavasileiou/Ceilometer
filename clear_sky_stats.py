@@ -1,4 +1,4 @@
-#threshold 95%, classic mean, mixing layer 1-2-3, filter dif 800m
+#threshold 95, mean, mixing layer 2-3, dif 800m
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -6,8 +6,8 @@ import os
 import ast
 import re 
 
-folder_path = r"C:\Users\nikip\Desktop\testceilo"
-folder_path_out = r"C:\Users\nikip\Desktop\results"
+folder_path = r"PATH"
+folder_path_out = r"PATH"
 
 def calculate_classical_avg(df):
     numeric_cols = ['Mixing Layer 1( Meters )','Mixing Layer 2( Meters )', 'Mixing Layer 3( Meters )']
@@ -107,6 +107,27 @@ stats()
 
 df_s = pd.read_csv('statistics.csv', delimiter=',', dtype={'date': str})
 indices_value_over_90 = []
+
+columns_to_consider = ['Sky Condition 1( Oktas ) Distribution', 'Sky Condition 2( Oktas ) Distribution',
+                       'Sky Condition 3( Oktas ) Distribution', 'Sky Condition 4( Oktas ) Distribution',
+                       'Sky Condition 5( Oktas ) Distribution']
+
+total_occurrences = 0
+number_occurrences = {i: 0 for i in range(9)}
+
+# Iterate through columns and count occurrences
+for column in columns_to_consider:
+    for row in df_s[column]:
+        dictionary_data = ast.literal_eval(row)  # Convert string to dictionary
+        total_occurrences += sum(dictionary_data.values())  # Add occurrences to the total
+        for num in range(9):
+            number_occurrences[num] += dictionary_data.get(num, 0)  # Add occurrences of each number
+
+# Calculate and print the overall frequency of each number as a percentage
+print("Overall Frequencies:")
+for num in range(9):
+    percentage = (number_occurrences[num] / total_occurrences) * 100
+    print(f"Number {num}: {percentage:.2f}%")
 
 # Iterate over the rows of the 'Sky Condition 2( Oktas ) Distribution' column
 for index, row in enumerate(df_s['Sky Condition 1( Oktas ) Distribution']):
