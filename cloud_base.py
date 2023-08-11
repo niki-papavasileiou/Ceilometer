@@ -1,4 +1,4 @@
-#weighted avg, dif 800m, mixing layer 2-3, 95
+#weighted avg, dif 500m, mixing layer 2-3, 95
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -185,7 +185,10 @@ data['UTC Timestamp'] = pd.to_datetime(data['UTC Timestamp'])
 
 # Extract the hour from the 'UTC Timestamp' column
 data['Hour'] = data['UTC Timestamp'].dt.hour
+data['Month'] = data['UTC Timestamp'].dt.month
 data['Hour'] = data['Hour'].apply(lambda x: f'{x:02d}:00')
+
+unique_months = data['Month'].unique()
 
 # Group by hour, and calculate the average of the 'Weighted Avg' column
 grouped_data_avg = data.groupby('Hour')['Weighted Avg'].mean().reset_index()
@@ -193,16 +196,33 @@ grouped_data_max = data.groupby('Hour')['Weighted Avg'].max().reset_index()
 grouped_data_min = data.groupby('Hour')['Weighted Avg'].min().reset_index()
 grouped_data_std = data.groupby('Hour')['Weighted Avg'].std().reset_index()
 
-plt.plot(grouped_data_avg['Hour'], grouped_data_avg['Weighted Avg'], label='Average')
-plt.plot(grouped_data_max['Hour'], grouped_data_max['Weighted Avg'], label='Maximum')
-plt.plot(grouped_data_min['Hour'], grouped_data_min['Weighted Avg'], label='Minimum')
-plt.plot(grouped_data_std['Hour'], grouped_data_std['Weighted Avg'], label='Standard Deviation')
+grouped_data_avg.rename(columns={'Weighted Avg': 'Average'}, inplace=True)
+grouped_data_max.rename(columns={'Weighted Avg': 'Maximum'}, inplace=True)
+grouped_data_min.rename(columns={'Weighted Avg': 'Minimum'}, inplace=True)
+grouped_data_std.rename(columns={'Weighted Avg': 'Standard Deviation'}, inplace=True)
+
+# plt.plot(grouped_data_avg['Hour'], grouped_data_avg['Weighted Avg'], label='Average')
+# plt.plot(grouped_data_max['Hour'], grouped_data_max['Weighted Avg'], label='Maximum')
+# plt.plot(grouped_data_min['Hour'], grouped_data_min['Weighted Avg'], label='Minimum')
+# plt.plot(grouped_data_std['Hour'], grouped_data_std['Weighted Avg'], label='Standard Deviation')
+
+plt.plot(grouped_data_avg['Hour'], grouped_data_avg['Average'], label='Average')
+plt.plot(grouped_data_max['Hour'], grouped_data_max['Maximum'], label='Maximum')
+plt.plot(grouped_data_min['Hour'], grouped_data_min['Minimum'], label='Minimum')
+plt.plot(grouped_data_std['Hour'], grouped_data_std['Standard Deviation'], label='Standard Deviation')
 
 plt.xlabel('Hour')
 plt.ylabel('Height')
+plt.title(f'Statistics for Month {unique_months}')
 plt.legend()
 
 plt.show()
+output_data = pd.concat([grouped_data_avg, grouped_data_max, grouped_data_min, grouped_data_std], axis=1)
+
+output_file_path = 'output_data.txt'
+output_data.to_csv(output_file_path, sep='\t', index=False) 
+print(f"Data saved to '{output_file_path}'") 
+
 
 # import pandas as pd
 # import matplotlib.pyplot as plt
