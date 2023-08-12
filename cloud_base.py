@@ -65,14 +65,26 @@ def stats():
 
             overall_percentage_nan = (total_nan_cells_all_columns / total_cells_all_columns) * 100
             percentage_nan_dict["Overall"] = overall_percentage_nan
-            
-            cloudy_columns = ['Cloud Base 1( Meters )', 'Cloud Base 2( Meters )', 'Cloud Base 3( Meters )', 'Cloud Base 4( Meters )']
-            df['AllCloudy'] = df.apply(lambda row: all(row[col] == nan_string for col in cloudy_columns), axis=1)
-            df['TimeDiff'] = df['UTC Timestamp'].diff()
-            cloudy_duration_per_file = df.groupby('AllCloudy')['TimeDiff'].sum()
-            cloudy_duration = cloudy_duration_per_file.get(True, pd.Timedelta(0)).total_seconds()
+
+            clear_sky_count = 0
+            total_rows = len(df)
+
+            for _, row in df.iterrows():
+                is_clear_sky = all(row[f"Cloud Base {col_num}( Meters )"] == nan_string for col_num in range(1, 5))
+                if is_clear_sky:
+                    clear_sky_count += 1
+
+            clear_sky_percentage = (clear_sky_count / total_rows) * 100
+            percentage_nan_dict["Overall 2"] = clear_sky_percentage
+        
+
+            # cloudy_columns = ['Cloud Base 1( Meters )', 'Cloud Base 2( Meters )', 'Cloud Base 3( Meters )', 'Cloud Base 4( Meters )']
+            # df['AllCloudy'] = df.apply(lambda row: all(row[col] == nan_string for col in cloudy_columns), axis=1)
+            # df['TimeDiff'] = df['UTC Timestamp'].diff()
+            # cloudy_duration_per_file = df.groupby('AllCloudy')['TimeDiff'].sum()
+            # cloudy_duration = cloudy_duration_per_file.get(True, pd.Timedelta(0)).total_seconds()
     
-            return percentage_nan_dict,cloudy_duration
+            return percentage_nan_dict#,clear_sky_duration#,clear_sky_duration,
 
         df['UTC Timestamp'] = pd.to_datetime(df['UTC Timestamp'])
         df['Hour'] = df['UTC Timestamp'].dt.hour
@@ -91,13 +103,13 @@ def stats():
         percentage4 = df['Sky Condition 4( Oktas )'].value_counts(normalize=True) * 100
         percentage5 = df['Sky Condition 5( Oktas )'].value_counts(normalize=True) * 100
 
-        cloud_base_percentages, cloudy_duration = cloud_base(df)
-        total_cloudy_duration += cloudy_duration
+        cloud_base_percentages = cloud_base(df)
+        # total_cloudy_duration += cloudy_duration
 
-        print("Cloudy Durations for Each File:")
-        print(f"File with Clouds: {cloudy_duration:.2f} seconds")
-        print(f"  - Minutes: {cloudy_duration / 60:.2f} minutes")
-        print(f"  - Hours: {cloudy_duration / 3600:.2f} hours")    
+        # print("Cloudy Durations for Each File:")
+        # print(f"File with Clouds: {cloudy_duration:.2f} seconds")
+        # print(f"  - Minutes: {cloudy_duration / 60:.2f} minutes")
+        # print(f"  - Hours: {cloudy_duration / 3600:.2f} hours")    
 
         stats_dict = {
             'Type': 'General',
@@ -121,10 +133,10 @@ def stats():
         # Add the 'Weighted Avg' column to the original DataFrame and save it back to the CSV file
         df.to_csv(file_path, index=False)
 
-    print("Total Cloudy Duration:")
-    print(f"  - Seconds: {total_cloudy_duration:.2f} seconds")
-    print(f"  - Minutes: {total_cloudy_duration / 60:.2f} minutes")
-    print(f"  - Hours: {total_cloudy_duration / 3600:.2f} hours")
+    # print("Total Cloudy Duration:")
+    # print(f"  - Seconds: {total_cloudy_duration:.2f} seconds")
+    # print(f"  - Minutes: {total_cloudy_duration / 60:.2f} minutes")
+    # print(f"  - Hours: {total_cloudy_duration / 3600:.2f} hours")
     
     # Save all the statistics to a CSV file
     filename = 'statistics.csv'
@@ -145,7 +157,7 @@ stats()
 df_s = pd.read_csv('statistics.csv', delimiter=',', dtype={'date': str})
 indices_value_over_90 = []
 
-for index, value in enumerate(df_s['Overall']):
+for index, value in enumerate(df_s['Overall 2']):
     if value > 95:
         indices_value_over_90.append(index)
         # Get the values in the 'date' column for the indices
@@ -204,7 +216,7 @@ n_total_days = len(os.listdir(folder_path))
 
 print(f"All hourly average data saved to: {output_file_path}")
 print(f"Total days: {n_total_days}, Valid days: {n_valid_days}")
-total_percentage = df_s['Overall'].sum() / len(df_s)
+total_percentage = df_s['Overall 2'].sum() / len(df_s)
 print(f"monthly percentage of clear sky: {total_percentage:.2f}%")
 
 ########################################################################################
