@@ -1,4 +1,4 @@
-#weighted avg, dif 500m, mixing layer 2-3, 95
+#weighted avg, dif 800m, mixing layer 2-3, 95
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -9,9 +9,9 @@ import re
 folder_path = r"C:\Users\nikip\Desktop\testceilo"
 folder_path_out = r"C:\Users\nikip\Desktop\results"
 
-
-
 def calculate_weighted_avg(df):
+    global initial_rows,final_rows
+
     weights = [2, 3]
     numeric_cols = ['Mixing Layer 2( Meters )', 'Mixing Layer 3( Meters )']
     initial_rows = len(df)
@@ -22,16 +22,18 @@ def calculate_weighted_avg(df):
     col_diff = df[numeric_cols[1]] - df[numeric_cols[0]]
     filtered_df = df[abs(col_diff) < 500]
 
-
-    terminal_rows = len(filtered_df)
+    final_rows = len(filtered_df)
 
     print(f"Initial rows: {initial_rows}")
-    print(f"Terminal rows: {terminal_rows}")
+    print(f"final rows: {final_rows}")
     
     avg = sum(df[col] * weight for col, weight in zip(numeric_cols, weights))
     return avg / sum(weights)
 
+
 def stats():
+    global csv_files
+
     csv_files = [f for f in os.listdir(folder_path) if f.endswith('.csv')]
 
     if len(csv_files) == 0:
@@ -39,6 +41,8 @@ def stats():
         return
 
     all_stats_df = pd.DataFrame()
+    total_initial_rows = 0
+    total_terminal_rows = 0
 
     for csv_file in csv_files:
         file_path = os.path.join(folder_path, csv_file)
@@ -72,6 +76,8 @@ def stats():
 
         df['date'] = pd.to_datetime(df['UTC Timestamp']).dt.strftime('%d%m%y')
         df['Weighted Avg'] = calculate_weighted_avg(df)
+        total_initial_rows += initial_rows
+        total_terminal_rows += final_rows
 
         percentage1 = df['Sky Condition 1( Oktas )'].value_counts(normalize=True) * 100
         percentage2 = df['Sky Condition 2( Oktas )'].value_counts(normalize=True) * 100
@@ -114,12 +120,14 @@ def stats():
     else:
         all_stats_df.to_csv(filename, mode='w', index=False)
 
+    print(f"Total initial rows across all files: {total_initial_rows}")
+    print(f"Total final rows across all files: {total_terminal_rows}")
+
 stats()
 
 df_s = pd.read_csv('statistics.csv', delimiter=',', dtype={'date': str})
 indices_value_over_90 = []
 
-# Iterate over the rows of the 'Sky Condition 2( Oktas ) Distribution' column
 for index, value in enumerate(df_s['Overall']):
     if value > 95:
         indices_value_over_90.append(index)
@@ -174,11 +182,12 @@ output_filename = 'all_hourly_averages.csv'
 output_file_path = os.path.join(folder_path_out, output_filename)
 all_hourly_avg_df.to_csv(output_file_path)
 
+n_valid_days = len(dates_value_over_90)
+n_total_days = len(os.listdir(folder_path))
+
 print(f"All hourly average data saved to: {output_file_path}")
-
-
+print(f"Total days: {n_total_days}, Valid days: {n_valid_days}")
 ########################################################################################
-
 
 data = pd.read_csv(output_file_path, delimiter=',')
 data['UTC Timestamp'] = pd.to_datetime(data['UTC Timestamp'])
@@ -201,15 +210,26 @@ grouped_data_max.rename(columns={'Weighted Avg': 'Maximum'}, inplace=True)
 grouped_data_min.rename(columns={'Weighted Avg': 'Minimum'}, inplace=True)
 grouped_data_std.rename(columns={'Weighted Avg': 'Standard Deviation'}, inplace=True)
 
-# plt.plot(grouped_data_avg['Hour'], grouped_data_avg['Weighted Avg'], label='Average')
-# plt.plot(grouped_data_max['Hour'], grouped_data_max['Weighted Avg'], label='Maximum')
-# plt.plot(grouped_data_min['Hour'], grouped_data_min['Weighted Avg'], label='Minimum')
-# plt.plot(grouped_data_std['Hour'], grouped_data_std['Weighted Avg'], label='Standard Deviation')
+# Calculate moving averages using a window of 5
+grouped_data_avg['Moving Average'] = grouped_data_avg['Average'].rolling(window=5).mean()
+grouped_data_max['Moving Average'] = grouped_data_max['Maximum'].rolling(window=5).mean()
+grouped_data_min['Moving Average'] = grouped_data_min['Minimum'].rolling(window=5).mean()
+grouped_data_std['Moving Average'] = grouped_data_std['Standard Deviation'].rolling(window=5).mean()
 
-plt.plot(grouped_data_avg['Hour'], grouped_data_avg['Average'], label='Average')
-plt.plot(grouped_data_max['Hour'], grouped_data_max['Maximum'], label='Maximum')
-plt.plot(grouped_data_min['Hour'], grouped_data_min['Minimum'], label='Minimum')
-plt.plot(grouped_data_std['Hour'], grouped_data_std['Standard Deviation'], label='Standard Deviation')
+# plt.plot(grouped_data_avg['Hour'], grouped_data_avg['Average'], label='Average')
+# plt.plot(grouped_data_max['Hour'], grouped_data_max['Maximum'], label='Maximum')
+# plt.plot(grouped_data_min['Hour'], grouped_data_min['Minimum'], label='Minimum')
+# plt.plot(grouped_data_std['Hour'], grouped_data_std['Standard Deviation'], label='Standard Deviation')
+
+plt.plot(grouped_data_avg['Hour'], grouped_data_avg['Moving Average'], label='Moving Average (Average)')
+plt.plot(grouped_data_max['Hour'], grouped_data_max['Moving Average'], label='Moving Average (Maximum)')
+plt.plot(grouped_data_min['Hour'], grouped_data_min['Moving Average'], label='Moving Average (Minimum)')
+plt.plot(grouped_data_std['Hour'], grouped_data_std['Moving Average'], label='Moving Average (Standard Deviation)')
+
+grouped_data_avg.rename(columns={'Moving Average': 'Moving Average (Average)'}, inplace=True)
+grouped_data_max.rename(columns={'Moving Average': 'Moving Average (Maximum)'}, inplace=True)
+grouped_data_min.rename(columns={'Moving Average': 'Moving Average (Minimum)'}, inplace=True)
+grouped_data_std.rename(columns={'Moving Average': 'Moving Average (Standard Deviation)'}, inplace=True)
 
 plt.xlabel('Hour')
 plt.ylabel('Height')
