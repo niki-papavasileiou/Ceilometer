@@ -30,7 +30,6 @@ def calculate_weighted_avg(df):
     avg = sum(df[col] * weight for col, weight in zip(numeric_cols, weights))
     return avg / sum(weights)
 
-
 def stats():
     global csv_files
 
@@ -43,6 +42,7 @@ def stats():
     all_stats_df = pd.DataFrame()
     total_initial_rows = 0
     total_terminal_rows = 0
+    total_cloudy_duration = 0
 
     for csv_file in csv_files:
         file_path = os.path.join(folder_path, csv_file)
@@ -65,8 +65,14 @@ def stats():
 
             overall_percentage_nan = (total_nan_cells_all_columns / total_cells_all_columns) * 100
             percentage_nan_dict["Overall"] = overall_percentage_nan
-
-            return percentage_nan_dict
+            
+            cloudy_columns = ['Cloud Base 1( Meters )', 'Cloud Base 2( Meters )', 'Cloud Base 3( Meters )', 'Cloud Base 4( Meters )']
+            df['AllCloudy'] = df.apply(lambda row: all(row[col] == nan_string for col in cloudy_columns), axis=1)
+            df['TimeDiff'] = df['UTC Timestamp'].diff()
+            cloudy_duration_per_file = df.groupby('AllCloudy')['TimeDiff'].sum()
+            cloudy_duration = cloudy_duration_per_file.get(True, pd.Timedelta(0)).total_seconds()
+    
+            return percentage_nan_dict,cloudy_duration
 
         df['UTC Timestamp'] = pd.to_datetime(df['UTC Timestamp'])
         df['Hour'] = df['UTC Timestamp'].dt.hour
@@ -85,7 +91,13 @@ def stats():
         percentage4 = df['Sky Condition 4( Oktas )'].value_counts(normalize=True) * 100
         percentage5 = df['Sky Condition 5( Oktas )'].value_counts(normalize=True) * 100
 
-        cloud_base_percentages = cloud_base(df)
+        cloud_base_percentages, cloudy_duration = cloud_base(df)
+        total_cloudy_duration += cloudy_duration
+
+        print("Cloudy Durations for Each File:")
+        print(f"File with Clouds: {cloudy_duration:.2f} seconds")
+        print(f"  - Minutes: {cloudy_duration / 60:.2f} minutes")
+        print(f"  - Hours: {cloudy_duration / 3600:.2f} hours")    
 
         stats_dict = {
             'Type': 'General',
@@ -109,6 +121,11 @@ def stats():
         # Add the 'Weighted Avg' column to the original DataFrame and save it back to the CSV file
         df.to_csv(file_path, index=False)
 
+    print("Total Cloudy Duration:")
+    print(f"  - Seconds: {total_cloudy_duration:.2f} seconds")
+    print(f"  - Minutes: {total_cloudy_duration / 60:.2f} minutes")
+    print(f"  - Hours: {total_cloudy_duration / 3600:.2f} hours")
+    
     # Save all the statistics to a CSV file
     filename = 'statistics.csv'
 
