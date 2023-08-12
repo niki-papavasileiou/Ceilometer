@@ -187,6 +187,9 @@ n_total_days = len(os.listdir(folder_path))
 
 print(f"All hourly average data saved to: {output_file_path}")
 print(f"Total days: {n_total_days}, Valid days: {n_valid_days}")
+total_percentage = df_s['Overall'].sum() / len(df_s)
+print(f"monthly percentage of clear sky: {total_percentage:.2f}%")
+
 ########################################################################################
 
 data = pd.read_csv(output_file_path, delimiter=',')
@@ -194,7 +197,9 @@ data['UTC Timestamp'] = pd.to_datetime(data['UTC Timestamp'])
 
 # Extract the hour from the 'UTC Timestamp' column
 data['Hour'] = data['UTC Timestamp'].dt.hour
+import calendar
 data['Month'] = data['UTC Timestamp'].dt.month
+data['Month'] = data['Month'].apply(lambda x: calendar.month_name[x])
 data['Hour'] = data['Hour'].apply(lambda x: f'{x:02d}:00')
 
 unique_months = data['Month'].unique()
