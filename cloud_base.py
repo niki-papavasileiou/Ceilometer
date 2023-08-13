@@ -13,12 +13,14 @@ folder_path = r"C:\Users\nikip\Desktop\testceilo"
 folder_path_out = r"C:\Users\nikip\Desktop\results"
 
 def calculate_weighted_avg(df):
-    global df_filter, final_rows,initial_rows
-    weights = [2, 3]
-    numeric_cols = ['Mixing Layer 2( Meters )', 'Mixing Layer 3( Meters )']
+    global df_filter
+    weights = [1,2, 3]
+    numeric_cols = ['Mixing Layer 1( Meters )','Mixing Layer 2( Meters )', 'Mixing Layer 3( Meters )']
     
     avg = sum(df[col] * weight for col, weight in zip(numeric_cols, weights))
     return avg / sum(weights)
+    # avg = df[numeric_cols].mean(axis=1)
+    # return avg
 
 def stats():
     global csv_files
@@ -101,13 +103,26 @@ def stats():
         df['date'] = pd.to_datetime(df['UTC Timestamp']).dt.strftime('%d%m%y')
         df['Weighted Avg'] = calculate_weighted_avg(df)
         
-        numeric_cols = ['Mixing Layer 2( Meters )', 'Mixing Layer 3( Meters )']
+        # numeric_cols = ['Mixing Layer 2( Meters )', 'Mixing Layer 3( Meters )']
+        numeric_cols = ['Mixing Layer 1( Meters )','Mixing Layer 2( Meters )', 'Mixing Layer 3( Meters )']
 
         for col in numeric_cols:
             df[col] = pd.to_numeric(df[col], errors='coerce')
 
-        col_diff = df[numeric_cols[1]] - df[numeric_cols[0]]
-        df_filter = df[abs(col_diff) < 800]
+        # col_diff = df[numeric_cols[1]] - df[numeric_cols[0]]
+        # df_filter = df[abs(col_diff) < 800]
+        col_diff_1_2 = df[numeric_cols[1]] - df[numeric_cols[0]]
+        col_diff_2_3 = df[numeric_cols[2]] - df[numeric_cols[1]]
+        col_diff_1_3 = df[numeric_cols[2]] - df[numeric_cols[0]]
+            
+            # Filter out rows where any of the absolute differences is greater than 800
+        df_filter = df[
+                (abs(col_diff_1_2) <= 800) &
+                (abs(col_diff_2_3) <= 800) &
+                (abs(col_diff_1_3) <= 800)
+            ]
+
+
         final_rows = len(df_filter)
 
         print(f"final rows: {final_rows}")
@@ -209,18 +224,33 @@ for date in dates_value_over_90:
         for filename in matching_filenames:
             file_path = os.path.join(folder_path, filename)
             df = pd.read_csv(file_path, delimiter=',')
-            numeric_cols = ['Mixing Layer 2( Meters )', 'Mixing Layer 3( Meters )']
+            # numeric_cols = ['Mixing Layer 2( Meters )', 'Mixing Layer 3( Meters )']
+            numeric_cols = ['Mixing Layer 1( Meters )','Mixing Layer 2( Meters )', 'Mixing Layer 3( Meters )']
 
             for col in numeric_cols:
                 df[col] = pd.to_numeric(df[col], errors='coerce')
 
-            col_diff = df[numeric_cols[1]] - df[numeric_cols[0]]
-            df_filter = df[abs(col_diff) < 800]
+            # col_diff = df[numeric_cols[1]] - df[numeric_cols[0]]
+            # df_filter = df[abs(col_diff) < 800]
+            col_diff_1_2 = df[numeric_cols[1]] - df[numeric_cols[0]]
+            col_diff_2_3 = df[numeric_cols[2]] - df[numeric_cols[1]]
+            col_diff_1_3 = df[numeric_cols[2]] - df[numeric_cols[0]]
+            
+            # Filter out rows where any of the absolute differences is greater than 800
+            df_filter = df[
+                (abs(col_diff_1_2) <= 800) &
+                (abs(col_diff_2_3) <= 800) &
+                (abs(col_diff_1_3) <= 800)
+            ]
+    
+
             
             # df_filter['UTC Timestamp'] = pd.to_datetime(df_filter['UTC Timestamp'])
-            df_filter.loc[:, 'UTC Timestamp'] = pd.to_datetime(df_filter['UTC Timestamp'])
-            df_filter.loc[:, 'Weighted Avg'] = pd.to_numeric(df_filter['Weighted Avg'], errors='coerce')
-            # df_filter['Weighted Avg'] = pd.to_numeric(df_filter['Weighted Avg'], errors='coerce')
+            # df_filter.loc[:, 'UTC Timestamp'] = pd.to_datetime(df_filter['UTC Timestamp'],errors='coerce' ).copy()
+            df_filter['UTC Timestamp'] = pd.to_datetime(df_filter['UTC Timestamp'], errors='coerce').copy()
+
+            # df_filter.loc[:, 'Weighted Avg'] = pd.to_numeric(df_filter['Weighted Avg'], errors='coerce').copy()
+            df_filter['Weighted Avg'] = pd.to_numeric(df_filter['Weighted Avg'], errors='coerce').copy()
             df_filter = df_filter[['UTC Timestamp', 'Weighted Avg']]
             
             # Set 'UTC Timestamp' as the DataFrame index
