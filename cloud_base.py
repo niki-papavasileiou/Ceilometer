@@ -6,26 +6,16 @@ import os
 import ast
 import re 
 
+import warnings
+pd.options.mode.chained_assignment = None  # default='war
+
 folder_path = r"C:\Users\nikip\Desktop\testceilo"
 folder_path_out = r"C:\Users\nikip\Desktop\results"
 
 def calculate_weighted_avg(df):
-    global initial_rows,final_rows
-
+    global df_filter, final_rows,initial_rows
     weights = [2, 3]
     numeric_cols = ['Mixing Layer 2( Meters )', 'Mixing Layer 3( Meters )']
-    initial_rows = len(df)
-
-    for col in numeric_cols:
-        df[col] = pd.to_numeric(df[col], errors='coerce')
-
-    col_diff = df[numeric_cols[1]] - df[numeric_cols[0]]
-    filtered_df = df[abs(col_diff) < 500]
-
-    final_rows = len(filtered_df)
-
-    print(f"Initial rows: {initial_rows}")
-    print(f"final rows: {final_rows}")
     
     avg = sum(df[col] * weight for col, weight in zip(numeric_cols, weights))
     return avg / sum(weights)
@@ -47,6 +37,19 @@ def stats():
     for csv_file in csv_files:
         file_path = os.path.join(folder_path, csv_file)
         df = pd.read_csv(file_path, delimiter=',')
+        initial_rows = len(df)
+        print(f"Initial rows: {initial_rows}")
+
+        # numeric_cols = ['Mixing Layer 2( Meters )', 'Mixing Layer 3( Meters )']
+
+        # for col in numeric_cols:
+        #     df[col] = pd.to_numeric(df[col], errors='coerce')
+
+        # col_diff = df[numeric_cols[1]] - df[numeric_cols[0]]
+        # df_filter = df[abs(col_diff) < 1000]
+        # final_rows = len(df_filter)
+
+        # print(f"final rows: {final_rows}")
 
         def cloud_base(df):
             nan_string = "/////"
@@ -60,31 +63,34 @@ def stats():
                 total_cells = df[cloud_base_column].size
                 total_cells_all_columns += total_cells
                 total_nan_cells_all_columns += nan_cells
-                percentage_nan = (nan_cells / total_cells) * 100
+                # percentage_nan = (nan_cells / total_cells) * 100
+                percentage_nan = (nan_cells / total_cells) * 100 if total_cells > 0 else 0  
                 percentage_nan_dict[cloud_base_column] = percentage_nan
 
-            overall_percentage_nan = (total_nan_cells_all_columns / total_cells_all_columns) * 100
+            overall_percentage_nan = (total_nan_cells_all_columns / total_cells_all_columns) * 100 if total_cells_all_columns > 0 else 0
             percentage_nan_dict["Overall"] = overall_percentage_nan
 
             clear_sky_count = 0
+            clear_sky_duration = pd.Timedelta(0)
             total_rows = len(df)
 
             for _, row in df.iterrows():
                 is_clear_sky = all(row[f"Cloud Base {col_num}( Meters )"] == nan_string for col_num in range(1, 5))
                 if is_clear_sky:
                     clear_sky_count += 1
+                    clear_sky_duration += row["UTC Timestamp"] - df["UTC Timestamp"].iloc[0]  # Calculate clear sky duration
 
-            clear_sky_percentage = (clear_sky_count / total_rows) * 100
+
+            clear_sky_percentage = (clear_sky_count / total_rows) * 100 if total_rows > 0 else 0
             percentage_nan_dict["Overall 2"] = clear_sky_percentage
         
-
             # cloudy_columns = ['Cloud Base 1( Meters )', 'Cloud Base 2( Meters )', 'Cloud Base 3( Meters )', 'Cloud Base 4( Meters )']
             # df['AllCloudy'] = df.apply(lambda row: all(row[col] == nan_string for col in cloudy_columns), axis=1)
             # df['TimeDiff'] = df['UTC Timestamp'].diff()
             # cloudy_duration_per_file = df.groupby('AllCloudy')['TimeDiff'].sum()
             # cloudy_duration = cloudy_duration_per_file.get(True, pd.Timedelta(0)).total_seconds()
     
-            return percentage_nan_dict#,clear_sky_duration#,clear_sky_duration,
+            return percentage_nan_dict,clear_sky_duration#,clear_sky_duration#,clear_sky_duration,
 
         df['UTC Timestamp'] = pd.to_datetime(df['UTC Timestamp'])
         df['Hour'] = df['UTC Timestamp'].dt.hour
@@ -94,6 +100,18 @@ def stats():
 
         df['date'] = pd.to_datetime(df['UTC Timestamp']).dt.strftime('%d%m%y')
         df['Weighted Avg'] = calculate_weighted_avg(df)
+        
+        numeric_cols = ['Mixing Layer 2( Meters )', 'Mixing Layer 3( Meters )']
+
+        for col in numeric_cols:
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+
+        col_diff = df[numeric_cols[1]] - df[numeric_cols[0]]
+        df_filter = df[abs(col_diff) < 800]
+        final_rows = len(df_filter)
+
+        print(f"final rows: {final_rows}")
+
         total_initial_rows += initial_rows
         total_terminal_rows += final_rows
 
@@ -103,19 +121,19 @@ def stats():
         percentage4 = df['Sky Condition 4( Oktas )'].value_counts(normalize=True) * 100
         percentage5 = df['Sky Condition 5( Oktas )'].value_counts(normalize=True) * 100
 
-        cloud_base_percentages = cloud_base(df)
+        cloud_base_percentages,clear_sky_duration = cloud_base(df)
         # total_cloudy_duration += cloudy_duration
 
-        # print("Cloudy Durations for Each File:")
-        # print(f"File with Clouds: {cloudy_duration:.2f} seconds")
-        # print(f"  - Minutes: {cloudy_duration / 60:.2f} minutes")
-        # print(f"  - Hours: {cloudy_duration / 3600:.2f} hours")    
+        # print("Cloudy Durations for Each Fe:")
+        # print(f"File with Clouds: {clear_sky_duration} seconds")
+        # print(f"  - Minutes: {clear_sky_duration / 60:.2f} minutes")
+        # print(f"  - Hours: {clear_sky_duration/ 3600:.2f} hours")    
 
         stats_dict = {
             'Type': 'General',
-            'date': df['date'].iloc[0],
-            'Weighted Avg': df['Weighted Avg'].max(),
-            'Weighted Avg': df['Weighted Avg'].min(),
+            'date': df_filter['date'].iloc[0] if len(df_filter) > 0 else None,
+            'Weighted Avg': df_filter['Weighted Avg'].max(),
+            'Weighted Avg': df_filter['Weighted Avg'].min(),
             'Sky Condition 1( Oktas ) Distribution': percentage1.to_dict(),
             'Sky Condition 2( Oktas ) Distribution': percentage2.to_dict(),
             'Sky Condition 3( Oktas ) Distribution': percentage3.to_dict(),
@@ -191,16 +209,25 @@ for date in dates_value_over_90:
         for filename in matching_filenames:
             file_path = os.path.join(folder_path, filename)
             df = pd.read_csv(file_path, delimiter=',')
+            numeric_cols = ['Mixing Layer 2( Meters )', 'Mixing Layer 3( Meters )']
+
+            for col in numeric_cols:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+
+            col_diff = df[numeric_cols[1]] - df[numeric_cols[0]]
+            df_filter = df[abs(col_diff) < 800]
             
-            df['UTC Timestamp'] = pd.to_datetime(df['UTC Timestamp'])
-            df['Weighted Avg'] = pd.to_numeric(df['Weighted Avg'], errors='coerce')
-            df = df[['UTC Timestamp', 'Weighted Avg']]
+            # df_filter['UTC Timestamp'] = pd.to_datetime(df_filter['UTC Timestamp'])
+            df_filter.loc[:, 'UTC Timestamp'] = pd.to_datetime(df_filter['UTC Timestamp'])
+            df_filter.loc[:, 'Weighted Avg'] = pd.to_numeric(df_filter['Weighted Avg'], errors='coerce')
+            # df_filter['Weighted Avg'] = pd.to_numeric(df_filter['Weighted Avg'], errors='coerce')
+            df_filter = df_filter[['UTC Timestamp', 'Weighted Avg']]
             
             # Set 'UTC Timestamp' as the DataFrame index
-            df.set_index('UTC Timestamp', inplace=True)
+            df_filter.set_index('UTC Timestamp', inplace=True)
             
             # Resample the data with 1-hour frequency and calculate the hourly average
-            hourly_avg_df = df.resample('1H').mean()
+            hourly_avg_df = df_filter.resample('1H').mean()
             
             # Append the hourly_avg_df DataFrame to the all_hourly_avg_df DataFrame
             all_hourly_avg_df = pd.concat([all_hourly_avg_df, hourly_avg_df])
