@@ -2,13 +2,12 @@ import os
 import pandas as pd
 from CeilometerData import *
 
-# if __name__ == '__main__':
-#     folder_path = r"E:\may"
-#     folder_path_out = r"C:\Users\nikip\Desktop\ceilometer_hours"
-#     processor = CeilometerData(folder_path, folder_path_out)
-#     processor.process_csv_files()
-
-folder_path_out = r"C:\Users\nikip\Desktop\ceilometer_hours"
+if __name__ == '__main__':
+    folder_path = r"PATH"
+    folder_path_out = r"PATH"
+    processor = CeilometerData(folder_path, folder_path_out)
+    processor.process_csv_files()
+    
 # Columns to compute the average for
 mixing_layer_columns = ['Mixing Layer 2( Meters )', 'Mixing Layer 3( Meters )']
 
@@ -120,7 +119,7 @@ confirmation = input("Do you want to delete the contents of the files? (yes/no):
 if confirmation.lower() == 'yes':
     for filename in os.listdir(folder_path_out):
         file_path = os.path.join(folder_path_out, filename)
-        with open(r"C:\Users\nikip\Desktop\conf\statistics.csv", 'w') as file:
+        with open(r"PATH\statistics.csv", 'w') as file:
                 pass
         with open(file_path, 'w') as file:
             pass
