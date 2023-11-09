@@ -272,10 +272,3 @@ class CeilometerData:
         print(f"Total days: {n_total_days}, Valid days: {n_valid_days}")
         total_percentage = df_s['Overall 2'].sum() / len(df_s)
         print(f"monthly percentage of clear sky: {total_percentage:.2f}%")
-
-
-# if __name__ == '__main__':
-#     folder_path = r"E:\may"
-#     folder_path_out = r"C:\Users\nikip\Desktop\ceilometer_hours"
-#     processor = CeilometerData(folder_path, folder_path_out)
-#     processor.process_csv_files()
