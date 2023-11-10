@@ -123,9 +123,9 @@ if confirmation.lower() == 'yes':
                 pass
         with open(file_path, 'w') as file:
             pass
-        for filename in os.listdir(r"E:\may"):
+        for filename in os.listdir(folder_path):
             if "merged" in filename:
-                file_path = os.path.join(r"E:\may", filename)
+                file_path = os.path.join(folder_path, filename)
                 os.remove(file_path)
     print("Contents deleted successfully!")
 else:
