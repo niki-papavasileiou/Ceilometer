@@ -119,7 +119,7 @@ confirmation = input("Do you want to delete the contents of the files? (yes/no):
 if confirmation.lower() == 'yes':
     for filename in os.listdir(folder_path_out):
         file_path = os.path.join(folder_path_out, filename)
-        with open(r"PATH\statistics.csv", 'w') as file:
+        with open("statistics.csv", 'w') as file:
                 pass
         with open(file_path, 'w') as file:
             pass
