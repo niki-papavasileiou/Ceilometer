@@ -7,7 +7,9 @@ if __name__ == '__main__':
     folder_path_out = r"PATH"
     processor = CeilometerData(folder_path, folder_path_out)
     processor.process_csv_files()
-    
+
+folder_path = r"PATH"
+folder_path_out = r"PATH"
 # Columns to compute the average for
 mixing_layer_columns = ['Mixing Layer 2( Meters )', 'Mixing Layer 3( Meters )']
 
@@ -61,7 +63,6 @@ for hour in range(24):
         averages.append((hour, avg))
         weighted_averages.append((hour, weighted_avg))
 
-# Convert the list of averages into a DataFrame
 avg_df = pd.DataFrame(averages, columns=['Hour', 'Average'])
 weighted_avg_df = pd.DataFrame(weighted_averages, columns=['Hour', 'Weighted Average'])
 median_df = pd.DataFrame(medians, columns=['Hour', 'Median'])
@@ -79,7 +80,8 @@ final_df = pd.merge(final_df, std_w_df, on='Hour')
 final_df = pd.merge(final_df, std_c_df, on='Hour')
 final_df = pd.merge(final_df, lengths_df, on='Hour')
 
-# Save the DataFrame into a new CSV file
+print(final_df)
+
 output_file = os.path.join(folder_path_out, "hourly_averages.csv")
 final_df.to_csv(output_file, index=False)
 
@@ -102,10 +104,10 @@ plt.figure(figsize=(12, 6))
 for column in data.columns[1:]:
     plt.plot(data['Hour'], data[column], label=column)
 
-title = "Hourly Data Visualization ({})".format(', '.join(month_names))
+title = "Hourly Data Visualization for {}".format(', '.join(month_names))
 plt.title(title)
 plt.xlabel("Hour")
-plt.ylabel("Value")
+plt.ylabel("Height")
 plt.legend()
 
 plt.grid(True)
