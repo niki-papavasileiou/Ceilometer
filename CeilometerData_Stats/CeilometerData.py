@@ -43,7 +43,7 @@ class CeilometerData:
                         # Exclude titles from the second file
                         merged_df = pd.concat([merged_df, df[1:]], ignore_index=True)
 
-                # Add 'merged' to the filename and save the merged file
+                # Add 'merged' to the filename and save the file
                 merged_filename = f"merged_{date}.csv"
                 merged_filepath = os.path.join(self.folder_path, merged_filename)
                 merged_df.to_csv(merged_filepath, index=False)
@@ -104,7 +104,6 @@ class CeilometerData:
         csv_files= self.filter_filenames_with_unique_dates(csv_files)
         print(csv_files)
         
-
         if len(csv_files) == 0:
             print("No CSV files found in the directory.")
             return
@@ -217,7 +216,6 @@ class CeilometerData:
         return matching_filenames
     
     def process_dates_value_over_90(self,df_s, dates_value_over_90):
-        all_hourly_avg_df = pd.DataFrame()
         hourly_dfs = {hour: pd.DataFrame() for hour in range(24)}
 
         for date in dates_value_over_90:
@@ -261,14 +259,9 @@ class CeilometerData:
             else:
                 print(f"Date {date} does not exist in filenames.")
 
-        output_filename = 'all_hourly_averages.csv'
-        output_file_path = os.path.join(self.folder_path_out, output_filename)
-        all_hourly_avg_df.to_csv(output_file_path)
-
         n_valid_days = len(dates_value_over_90)
         n_total_days = len(csv_files)
 
-        print(f"All hourly average data saved to: {output_file_path}")
         print(f"Total days: {n_total_days}, Valid days: {n_valid_days}")
         total_percentage = df_s['Overall 2'].sum() / len(df_s)
         print(f"monthly percentage of clear sky: {total_percentage:.2f}%")
